@@ -1,0 +1,23 @@
+We have two tables: user_table and price_snapshot
+
+User_table: User id | create_date
+Price_snapshot: User id | price | snapshot_date
+
+Question: % Users who had pricing change within one week of creation?
+
+WITH price_changes AS ( 
+SELECT 
+      p.user_id, 
+      MIN(p.snapshot_date) AS first_snapshot_date, 
+      MAX(p.price) - MIN(p.price) AS price_diff 
+FROM price_snapshot p 
+JOIN user_table u 
+ON p.user_id = u.user_id 
+WHERE p.snapshot_date BETWEEN u.create_date AND u.create_date + INTERVAL '7 days' GROUP BY p.user_id 
+) 
+
+SELECT 
+     COUNT(DISTINCT CASE WHEN price_diff <> 0 THEN user_id END) * 100.0 / COUNT(DISTINCT u.user_id) AS percentage_users_with_price_change 
+FROM user_table u 
+LEFT JOIN price_changes pc 
+ON u.user_id = pc.user_id
